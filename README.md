@@ -22,7 +22,7 @@ abstract classes.
 
 You can find examples in `examples/` directory
 
-You can also run examples: `python examples/autoencoder.py`
+You can also run examples: `python examples/iris.py`
 
 You might want to `export PYTHONPATH=/path/to/this/directory`
 
