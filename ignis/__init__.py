@@ -14,9 +14,12 @@ def fit(x,
         epoch,
         validation_split=0,
         batch_size=16,
-        callbacks=[],
+        callbacks=None,
         verbose=True,
         ):
+    if callbacks is None:
+        callbacks = []
+
     dataset = Dataset(x=x, y=y)
 
     x_size = len(x)
@@ -67,7 +70,6 @@ def fit(x,
                 train_progress_equal = train_points // train_print_chunk
                 print('\rTrain ' + str(train_points) + ' / ' + str(train_size) + ' [' + train_progress_equal * '=' +
                       (30 - train_progress_equal) * ' ' + '] - loss: ' + str(round(train_loss/train_points, 5)), end='')
-
 
         validation_points = 0
         validation_loss = 0.0
