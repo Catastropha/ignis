@@ -6,20 +6,7 @@ from .datasets import Dataset
 name = 'ignis'
 
 
-def fit(x,
-        y,
-        model,
-        loss_fn,
-        optimizer,
-        epoch,
-        validation_split=0,
-        batch_size=16,
-        callbacks=None,
-        verbose=True,
-        ):
-    if callbacks is None:
-        callbacks = []
-
+def pack_data(x, y, validation_split, batch_size):
     dataset = Dataset(x=x, y=y)
 
     x_size = len(x)
@@ -43,6 +30,30 @@ def fit(x,
         batch_size=batch_size,
         sampler=valid_sampler,
         num_workers=6,
+    )
+
+    return train_loader, train_size, validation_loader, validation_size
+
+
+def fit(x,
+        y,
+        model,
+        loss_fn,
+        optimizer,
+        epoch,
+        validation_split=0,
+        batch_size=16,
+        callbacks=None,
+        verbose=True,
+        ):
+    if callbacks is None:
+        callbacks = []
+
+    train_loader, train_size, validation_loader, validation_size = pack_data(
+        x=x,
+        y=y,
+        validation_split=validation_split,
+        batch_size=batch_size,
     )
 
     train_print_chunk = int(train_size / 30)

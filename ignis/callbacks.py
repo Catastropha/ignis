@@ -11,7 +11,6 @@ class Callback(metaclass=ABCMeta):
         self.monitor = monitor
         self.mode = mode
         self.verbose = verbose
-        self.count = 0
         self.previous_value = 0
 
         self.train_loss = float('inf')
@@ -118,7 +117,7 @@ class EarlyStop(Callback):
 
         elif self.count == self.patience:
             if self.verbose:
-                old, new = self.improvement()
+                _, new = self.improvement()
                 print('\nEarly stop! ' + self.monitor + ' did not improve from ' + str(round(new, 5)) + ' for ' +
                       str(self.patience) + ' epochs', end='')
             return True
@@ -140,7 +139,6 @@ class ModelCheckpoint(Callback):
                           verbose=verbose,
                           )
         self.filepath = filepath
-        self.count = 0
 
     def execute(self, condition_satisfied: bool) -> bool:
 
