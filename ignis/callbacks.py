@@ -6,7 +6,7 @@ class Callback(metaclass=ABCMeta):
     def __init__(self,
                  monitor: str,
                  mode: str,
-                 verbose: bool,
+                 verbose: bool = False,
                  ):
         self.monitor = monitor
         self.mode = mode
@@ -37,7 +37,7 @@ class Callback(metaclass=ABCMeta):
                  train_accuracy: float = 0.0,
                  validation_loss: float = 0.0,
                  validation_accuracy: float = 0.0,
-                 ):
+                 ) -> bool:
 
         condition_satisfied = False
 
@@ -81,7 +81,7 @@ class Callback(metaclass=ABCMeta):
                 self.validation_accuracy = validation_accuracy
                 condition_satisfied = True
 
-        self.execute(condition_satisfied=condition_satisfied)
+        return self.execute(condition_satisfied=condition_satisfied)
 
     def improvement(self):
         if self.monitor == 'train_loss':
@@ -100,7 +100,7 @@ class EarlyStop(Callback):
                  monitor: str,
                  mode: str,
                  patience: int,
-                 verbose: bool,
+                 verbose: bool = False,
                  ):
         Callback.__init__(self,
                           monitor=monitor,
@@ -119,8 +119,8 @@ class EarlyStop(Callback):
         elif self.count == self.patience:
             if self.verbose:
                 old, new = self.improvement()
-                print('Early stop! ' + self.monitor + ' did not improve from ' + str(round(new, 5)) + ' for ' +
-                      str(self.patience) + ' epochs')
+                print('\nEarly stop! ' + self.monitor + ' did not improve from ' + str(round(new, 5)) + ' for ' +
+                      str(self.patience) + ' epochs', end='')
             return True
 
         return False
@@ -132,7 +132,7 @@ class ModelCheckpoint(Callback):
                  monitor: str,
                  mode: str,
                  filepath: str,
-                 verbose: bool,
+                 verbose: bool = False,
                  ):
         Callback.__init__(self,
                           monitor=monitor,
@@ -147,13 +147,13 @@ class ModelCheckpoint(Callback):
         if condition_satisfied:
             if self.verbose:
                 old, new = self.improvement()
-                print(self.monitor + ' improved from ' + str(round(old, 5)) + ' to ' + str(round(new, 5)) +
-                      ', saving model to ' + self.filepath)
+                print('\n' + self.monitor + ' improved from ' + str(round(old, 5)) + ' to ' + str(round(new, 5)) +
+                      ', saving model to ' + self.filepath, end='')
             return True
 
         elif self.verbose:
             old, new = self.improvement()
-            print(self.monitor + ' did not improve from ' + str(round(new, 5)))
+            print('\n' + self.monitor + ' did not improve from ' + str(round(new, 5)), end='')
 
         return False
 
