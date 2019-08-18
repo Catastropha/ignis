@@ -61,7 +61,7 @@ def fit(x,
     for i in range(1, epoch+1):
 
         if verbose:
-            print('Epoch: ' + str(i) + ' / ' + str(epoch))
+            print('Epoch: ' + str(i) + '/' + str(epoch))
 
         train_points = 0
         train_loss = 0
@@ -81,7 +81,7 @@ def fit(x,
 
             if verbose:
                 train_progress_equal = train_points // train_print_chunk
-                print('\rTrain ' + str(train_points) + ' / ' + str(train_size) + ' [' + train_progress_equal * '=' +
+                print('\rTrain ' + str(train_points) + '/' + str(train_size) + ' [' + train_progress_equal * '=' +
                       (30 - train_progress_equal) * ' ' + '] - loss: ' + str(round(train_epoch_loss, 5)), end='')
 
         validation_points = 0
@@ -105,7 +105,7 @@ def fit(x,
 
                     if verbose:
                         validation_progress_equal = validation_points // validation_print_chunk
-                        print('\rValidate ' + str(validation_points) + ' / ' + str(validation_size) + ' [' +
+                        print('\rValidate ' + str(validation_points) + '/' + str(validation_size) + ' [' +
                               validation_progress_equal * '=' + (15 - validation_progress_equal) * ' ' + '] - loss: ' +
                               str(round(validation_epoch_loss, 5)), end='')
             model.train()
