@@ -10,25 +10,18 @@ def pack_data(x, y, validation_split, batch_size):
     dataset = Dataset(x=x, y=y)
 
     x_size = len(x)
-    indices = list(range(x_size))
-    split = int(x_size * validation_split)
-    train_indices, validation_indices = indices[split:], indices[:split]
-    train_size = len(train_indices)
-    validation_size = len(validation_indices)
-
-    train_sampler = data.sampler.SubsetRandomSampler(train_indices)
-    valid_sampler = data.sampler.SubsetRandomSampler(validation_indices)
+    validation_size = int(x_size * validation_split)
+    train_size = x_size - validation_size
+    train_set, validation_set = data.random_split(dataset=dataset, lengths=(train_size, validation_size))
 
     train_loader = data.DataLoader(
-        dataset=dataset,
+        dataset=train_set,
         batch_size=batch_size,
-        sampler=train_sampler,
         num_workers=6,
     )
     validation_loader = data.DataLoader(
-        dataset=dataset,
+        dataset=validation_set,
         batch_size=batch_size,
-        sampler=valid_sampler,
         num_workers=6,
     )
 
@@ -56,8 +49,6 @@ def fit(x,
         batch_size=batch_size,
     )
 
-    train_print_chunk = int(train_size / 30)
-    validation_print_chunk = int(validation_size / 15)
     for i in range(1, epoch+1):
 
         if verbose:
@@ -80,9 +71,8 @@ def fit(x,
             train_epoch_loss = train_loss/train_points
 
             if verbose:
-                train_progress_equal = train_points // train_print_chunk
-                print('\rTrain ' + str(train_points) + '/' + str(train_size) + ' [' + train_progress_equal * '=' +
-                      (30 - train_progress_equal) * ' ' + '] - loss: ' + str(round(train_epoch_loss, 5)), end='')
+                print('\rTrain ' + str(train_points) + '/' + str(train_size) + ' - loss: ' +
+                      str(round(train_epoch_loss, 5)), end='')
 
         validation_points = 0
         validation_loss = 0
@@ -104,9 +94,7 @@ def fit(x,
                     validation_epoch_loss = validation_loss / validation_points
 
                     if verbose:
-                        validation_progress_equal = validation_points // validation_print_chunk
-                        print('\rValidate ' + str(validation_points) + '/' + str(validation_size) + ' [' +
-                              validation_progress_equal * '=' + (15 - validation_progress_equal) * ' ' + '] - loss: ' +
+                        print('\rValidate ' + str(validation_points) + '/' + str(validation_size) + ' - loss: ' +
                               str(round(validation_epoch_loss, 5)), end='')
             model.train()
 
