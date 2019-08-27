@@ -4,4 +4,4 @@ __pycache__/
 dist/
 ignis.egg-info/
 build/
-best_model.h5
+best_model.pt
