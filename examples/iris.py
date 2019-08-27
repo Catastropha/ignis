@@ -3,6 +3,7 @@ import torch.optim as optim
 import pandas as pd
 
 from ignis import fit
+from ignis.loaders import create_loaders
 from ignis.callbacks import EarlyStop, ModelCheckpoint
 
 
@@ -10,6 +11,12 @@ df = pd.read_csv('examples/iris.csv')
 data = df.drop(columns=['Id', 'Species'])
 labels = df['Species']
 labels = pd.get_dummies(labels)
+
+train_loader, validation_loader = create_loaders(
+    x=data.values,
+    y=labels.values,
+    validation_split=0.1,
+)
 
 
 class Model(nn.Module):
@@ -35,13 +42,12 @@ callbacks = [
 ]
 
 fit(
-    x=data.values,
-    y=labels.values,
+    train_loader=train_loader,
+    validation_loader=validation_loader,
     model=model,
     loss_fn=loss_fn,
     optimizer=optimizer,
     epoch=500,
-    validation_split=0.1,
     callbacks=callbacks,
     verbose=True,
 )

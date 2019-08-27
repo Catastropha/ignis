@@ -1,34 +1,10 @@
 import torch
-from torch.utils import data
 from .callbacks import EarlyStop, ModelCheckpoint
-from .datasets import Dataset
 
 name = 'ignis'
 
 
-def pack_data(x, y, validation_split, batch_size, num_workers):
-    dataset = Dataset(x=x, y=y)
-
-    x_size = len(x)
-    validation_size = int(x_size * validation_split)
-    train_size = x_size - validation_size
-    train_set, validation_set = data.random_split(dataset=dataset, lengths=(train_size, validation_size))
-
-    train_loader = data.DataLoader(
-        dataset=train_set,
-        batch_size=batch_size,
-        num_workers=num_workers,
-    )
-    validation_loader = data.DataLoader(
-        dataset=validation_set,
-        batch_size=batch_size,
-        num_workers=num_workers,
-    )
-
-    return train_loader, train_size, validation_loader, validation_size
-
-
-def train(model, optimizer, loss_fn, loader, size, verbose):
+def train(model, optimizer, loss_fn, loader, verbose):
     train_points = 0
     train_loss = 0
     train_epoch_loss = 0
@@ -45,13 +21,13 @@ def train(model, optimizer, loss_fn, loader, size, verbose):
         train_epoch_loss = train_loss/train_points
 
         if verbose:
-            print('\rTrain ' + str(train_points) + '/' + str(size) + ' - loss: ' +
+            print('\rTrain ' + str(train_points) + '/' + str(train_points) + ' - loss: ' +
                   str(round(train_epoch_loss, 5)), end='')
 
     return train_epoch_loss
 
 
-def validate(model, loss_fn, loader, size, verbose):
+def validate(model, loss_fn, loader, verbose):
     validation_points = 0
     validation_loss = 0
     validation_epoch_loss = 0
@@ -68,35 +44,24 @@ def validate(model, loss_fn, loader, size, verbose):
             validation_epoch_loss = validation_loss / validation_points
 
             if verbose:
-                print('\rValidate ' + str(validation_points) + '/' + str(size) + ' - loss: ' +
+                print('\rValidate ' + str(validation_points) + '/' + str(validation_points) + ' - loss: ' +
                       str(round(validation_epoch_loss, 5)), end='')
     model.train()
 
     return validation_epoch_loss
 
 
-def fit(x,
-        y,
+def fit(train_loader,
+        validation_loader,
         model,
         loss_fn,
         optimizer,
         epoch,
-        validation_split=0,
-        batch_size=16,
-        num_workers=6,
         callbacks=None,
         verbose=True,
         ):
     if callbacks is None:
         callbacks = []
-
-    train_loader, train_size, validation_loader, validation_size = pack_data(
-        x=x,
-        y=y,
-        validation_split=validation_split,
-        batch_size=batch_size,
-        num_workers=num_workers,
-    )
 
     for i in range(1, epoch+1):
 
@@ -108,12 +73,11 @@ def fit(x,
             optimizer=optimizer,
             loss_fn=loss_fn,
             loader=train_loader,
-            size=train_size,
             verbose=verbose,
         )
 
         validation_epoch_loss = 0
-        if validation_split > 0:
+        if len(validation_loader) > 0:
             if verbose:
                 print()
 
@@ -121,7 +85,6 @@ def fit(x,
                 model=model,
                 loss_fn=loss_fn,
                 loader=validation_loader,
-                size=validation_size,
                 verbose=verbose,
             )
 
