@@ -37,8 +37,8 @@ model = Model()
 loss_fn = nn.MSELoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 callbacks = [
-    EarlyStop(monitor='train_loss', mode='min', patience=3),
-    ModelCheckpoint(monitor='validation_loss', mode='min', filepath='best_model.pt'),
+    EarlyStop(monitor='train_loss', patience=3),
+    ModelCheckpoint(monitor='validation_loss', filepath='best_model.pt'),
 ]
 
 fit(

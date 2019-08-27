@@ -5,19 +5,12 @@ class Callback(metaclass=ABCMeta):
 
     def __init__(self,
                  monitor: str,
-                 mode: str,
                  ):
         self.monitor = monitor
-        self.mode = mode
         self.previous_value = 0
 
         self.train_loss = float('inf')
         self.validation_loss = float('inf')
-
-        if self.monitor == 'train_loss' and self.mode == 'max':
-            self.train_loss = float('-inf')
-        elif self.monitor == 'validation_loss' and self.mode == 'max':
-            self.validation_loss = float('-inf')
 
     @abstractmethod
     def execute(self, condition_satisfied: bool) -> bool:
@@ -31,21 +24,13 @@ class Callback(metaclass=ABCMeta):
         condition_satisfied = False
 
         if self.monitor == 'train_loss':
-            if self.mode == 'min' and self.train_loss > train_loss:
-                self.previous_value = self.train_loss
-                self.train_loss = train_loss
-                condition_satisfied = True
-            elif self.mode == 'max' and self.train_loss < train_loss:
+            if self.train_loss > train_loss:
                 self.previous_value = self.train_loss
                 self.train_loss = train_loss
                 condition_satisfied = True
 
         elif self.monitor == 'validation_loss':
-            if self.mode == 'min' and self.validation_loss > validation_loss:
-                self.previous_value = self.validation_loss
-                self.validation_loss = validation_loss
-                condition_satisfied = True
-            elif self.mode == 'max' and self.validation_loss < validation_loss:
+            if self.validation_loss > validation_loss:
                 self.previous_value = self.validation_loss
                 self.validation_loss = validation_loss
                 condition_satisfied = True
@@ -63,12 +48,10 @@ class EarlyStop(Callback):
 
     def __init__(self,
                  monitor: str,
-                 mode: str,
                  patience: int,
                  ):
         Callback.__init__(self,
                           monitor=monitor,
-                          mode=mode,
                           )
         self.patience = patience
         self.count = 0
@@ -87,12 +70,10 @@ class ModelCheckpoint(Callback):
 
     def __init__(self,
                  monitor: str,
-                 mode: str,
                  filepath: str,
                  ):
         Callback.__init__(self,
                           monitor=monitor,
-                          mode=mode,
                           )
         self.filepath = filepath
 
