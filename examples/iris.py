@@ -47,7 +47,7 @@ fit(
     model=model,
     loss_fn=loss_fn,
     optimizer=optimizer,
-    epoch=500,
+    epochs=500,
     callbacks=callbacks,
     verbose=True,
 )
