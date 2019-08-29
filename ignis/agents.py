@@ -1,34 +1,34 @@
-import numpy as np
 import torch
-import torch.nn.functional as F
+from .memories import BasicMemory
+import numpy as np
 
 
 class DDPGAgent:
-    def __init__(self, config):
-        self.config = config
-        self.seed = config.seed
+    def __init__(self,
+                 actor,
+                 actor_optimizer,
+                 critic,
+                 critic_optimizer,
+                 memory_size,
+                 batch_size,
+                 ):
 
         # Actor Network (w/ Target Network)
-        self.actor_local = config.actor_network_fn()
-        self.actor_target = config.actor_network_fn()
-        self.actor_optimizer = config.actor_optimizer_fn(self.actor_local.parameters())
+        self.actor_local = actor
+        self.actor_target = type(actor)()
+        self.actor_optimizer = actor_optimizer
 
         # Critic Network (w/ Target Network)
-        self.critic_local = config.critic_network_fn()
-        self.critic_target = config.critic_network_fn()
-        self.critic_optimizer = config.critic_optimizer_fn(self.critic_local.parameters())
+        self.critic_local = critic
+        self.critic_target = type(critic)()
+        self.critic_optimizer = critic_optimizer
 
         # ----------------------- initialize target networks ----------------------- #
         self.soft_update(self.critic_local, self.critic_target, 1)
         self.soft_update(self.actor_local, self.actor_target, 1)
 
-        self.noise = config.noise_fn()
-
-        self.memory = config.memory_fn()
+        self.memory = BasicMemory(memory_size=memory_size, batch_size=batch_size)
         self.t_step = 0
-
-    def reset(self):
-        self.noise.reset()
 
     def act(self, states):
         """Returns actions for given state as per current policy."""
@@ -37,7 +37,6 @@ class DDPGAgent:
         with torch.no_grad():
             actions = self.actor_local(states).cpu().data.numpy()
         self.actor_local.train()
-        actions += self.noise.sample()
         return np.clip(actions, -1, 1)
 
     def step(self, states, actions, rewards, next_states, dones):

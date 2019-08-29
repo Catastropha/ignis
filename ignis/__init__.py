@@ -1,2 +1,2 @@
 from .supervised import fit
-from .rl import ddpg
+from .agents import DDPGAgent

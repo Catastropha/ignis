@@ -23,8 +23,8 @@ class Model(nn.Module):
     def __init__(self, ):
         super(Model, self).__init__()
         self.fc1 = nn.Linear(4, 8)
-        self.fc2 = nn.Linear(8, 3)
         self.relu = nn.ReLU()
+        self.fc2 = nn.Linear(8, 3)
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
