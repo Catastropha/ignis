@@ -5,6 +5,7 @@ import numpy as np
 
 class DDPGAgent:
     def __init__(self,
+                 device,
                  actor,
                  actor_optimizer,
                  critic,
@@ -23,12 +24,15 @@ class DDPGAgent:
         self.critic_target = type(critic)()
         self.critic_optimizer = critic_optimizer
 
+        # Memory
+        self.memory = BasicMemory(memory_size=memory_size, batch_size=batch_size, device=device)
+        self.t_step = 0
+
         # ----------------------- initialize target networks ----------------------- #
         self.soft_update(self.critic_local, self.critic_target, 1)
         self.soft_update(self.actor_local, self.actor_target, 1)
 
-        self.memory = BasicMemory(memory_size=memory_size, batch_size=batch_size)
-        self.t_step = 0
+
 
     def act(self, states):
         """Returns actions for given state as per current policy."""
