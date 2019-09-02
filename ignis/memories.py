@@ -1,19 +1,33 @@
-from collections import deque
+from collections import namedtuple, deque
+import torch
 import numpy as np
 import random
-import torch
 
 
-class BasicMemory:
+class ReplayBuffer:
+    """Fixed-size buffer to store experience tuples."""
 
-    def __init__(self, memory_size, batch_size, device):
-        self.memory = deque(maxlen=1000)
-        self.memory_size = memory_size
+    def __init__(self, action_size, buffer_size, batch_size, seed, device):
+        """Initialize a ReplayBuffer object.
+
+        Params
+        ======
+            action_size (int): dimension of each action
+            buffer_size (int): maximum size of buffer
+            batch_size (int): size of each training batch
+            seed (int): random seed
+        """
+        self.action_size = action_size
+        self.memory = deque(maxlen=buffer_size)
         self.batch_size = batch_size
+        self.experience = namedtuple("Experience", field_names=["state", "action", "reward", "next_state", "done"])
+        self.seed = random.seed(seed)
         self.device = device
 
     def add(self, state, action, reward, next_state, done):
-        self.memory.append((state, action, reward, next_state, done))
+        """Add a new experience to memory."""
+        e = self.experience(state, action, reward, next_state, done)
+        self.memory.append(e)
 
     def sample(self):
         experiences = random.sample(self.memory, k=self.batch_size)
@@ -27,4 +41,5 @@ class BasicMemory:
         return states, actions, rewards, next_states, dones
 
     def __len__(self):
+        """Return the current size of internal memory."""
         return len(self.memory)
