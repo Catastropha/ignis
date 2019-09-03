@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 from .memories import BasicMemory
 import numpy as np
 
@@ -12,7 +13,16 @@ class DDPGAgent:
                  critic_optimizer,
                  memory_size,
                  batch_size,
+                 update_every,
+                 discount,
+                 soft_update_tau,
                  ):
+
+        self.device = device
+        self.update_every = update_every
+        self.discount = discount
+        self.soft_update_tau = soft_update_tau
+        self.t_step = 0
 
         # Actor Network (w/ Target Network)
         self.actor_local = actor
@@ -26,17 +36,14 @@ class DDPGAgent:
 
         # Memory
         self.memory = BasicMemory(memory_size=memory_size, batch_size=batch_size, device=device)
-        self.t_step = 0
 
         # ----------------------- initialize target networks ----------------------- #
         self.soft_update(self.critic_local, self.critic_target, 1)
         self.soft_update(self.actor_local, self.actor_target, 1)
 
-
-
     def act(self, states):
         """Returns actions for given state as per current policy."""
-        states = torch.from_numpy(states).float().to(self.config.device)
+        states = torch.from_numpy(states).float().to(self.device)
         self.actor_local.eval()
         with torch.no_grad():
             actions = self.actor_local(states).cpu().data.numpy()
@@ -49,12 +56,12 @@ class DDPGAgent:
             self.memory.add(state, action, reward, next_state, done)
 
         # Learn every UPDATE_EVERY time steps.
-        self.t_step = (self.t_step + 1) % self.config.update_every
+        self.t_step = (self.t_step + 1) % self.update_every
         if self.t_step == 0:
             # If enough samples are available in memory, get random subset and learn
-            if len(self.memory) > self.config.batch_size:
+            if len(self.memory) > self.memory.batch_size:
                 experiences = self.memory.sample()
-                self.learn(experiences, self.config.discount)
+                self.learn(experiences, self.discount)
 
     def learn(self, experiences, gamma):
         """Update policy and value parameters using given batch of experience tuples.
@@ -78,7 +85,8 @@ class DDPGAgent:
         Q_targets = rewards + (gamma * Q_targets_next * (1 - dones))
         # Compute critic loss
         Q_expected = self.critic_local(states, actions)
-        critic_loss = F.mse_loss(Q_expected, Q_targets)
+        loss = nn.MSELoss()
+        critic_loss = loss(Q_expected, Q_targets)
         # Minimize the loss
         self.critic_optimizer.zero_grad()
         critic_loss.backward()
@@ -95,8 +103,8 @@ class DDPGAgent:
         self.actor_optimizer.step()
 
         # ----------------------- update target networks ----------------------- #
-        self.soft_update(self.critic_local, self.critic_target, self.config.tau)
-        self.soft_update(self.actor_local, self.actor_target, self.config.tau)
+        self.soft_update(self.critic_local, self.critic_target, self.soft_update_tau)
+        self.soft_update(self.actor_local, self.actor_target, self.soft_update_tau)
 
     def soft_update(self, local_model, target_model, tau):
         """Soft update model parameters.
