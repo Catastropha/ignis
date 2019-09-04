@@ -118,5 +118,38 @@ class DDPGAgent:
         for target_param, local_param in zip(target_model.parameters(), local_model.parameters()):
             target_param.data.copy_(tau*local_param.data + (1.0-tau)*target_param.data)
 
-    def run(self, environment, epochs):
-        pass
+    def run(self, env, epochs):
+        all_scores = []
+        scores_window = deque(maxlen=100)
+
+        for epoch in range(1, epochs+1):
+
+            states = env.reset()
+            scores = np.zeros(config.num_agents)
+
+            for _ in range(max_t):
+                actions = agent.act(states)
+                env_info = env.step(actions)[brain_name]
+                rewards = env_info.rewards
+                next_states = env_info.vector_observations
+                dones = env_info.local_done
+
+                agent.step(states, actions, rewards, next_states, dones)
+
+                scores += rewards
+                states = next_states
+
+            avg_score = np.mean(scores)
+            scores_window.append(avg_score)
+            all_scores.append(avg_score)
+
+            print('\rEpisode {}\tAverage Score: {:.2f}'.format(epoch, np.mean(scores_window)), end="")
+            if epoch % 100 == 0:
+                print('\rEpisode {}\tAverage Score: {:.2f}'.format(epoch, np.mean(scores_window)))
+            if np.mean(scores_window)>=30.0:
+                print('\nEnvironment solved in {:d} episodes!\tAverage Score: {:.2f}'.format(epoch-100, np.mean(scores_window)))
+                torch.save(agent.actor_local.state_dict(), 'checkpoint_actor.pth')
+                torch.save(agent.critic_local.state_dict(), 'checkpoint_critic.pth')
+                break
+
+        return all_scores

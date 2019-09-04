@@ -45,7 +45,6 @@ critic = CriticModel()
 actor_optimizer = Adam(actor.parameters(), lr=1e-3)
 critic_optimizer = Adam(critic.parameters(), lr=3e-3)
 
-
 ddpg = DDPGAgent(
     device='cpu',
     actor=actor,
@@ -59,4 +58,4 @@ ddpg = DDPGAgent(
     soft_update_tau=1e-3,
 )
 
-ddpg.run(environment=env, epochs=500)
+ddpg.run(env=env, epochs=500)
