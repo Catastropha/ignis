@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from .memories import BasicMemory
 import numpy as np
+from collections import deque
 
 
 class DDPGAgent:
@@ -50,10 +51,9 @@ class DDPGAgent:
         self.actor_local.train()
         return np.clip(actions, -1, 1)
 
-    def step(self, states, actions, rewards, next_states, dones):
+    def step(self, state, action, reward, next_state, done):
         # Save experience in replay memory
-        for state, action, reward, next_state, done in zip(states, actions, rewards, next_states, dones):
-            self.memory.add(state, action, reward, next_state, done)
+        self.memory.add(state, action, reward, next_state, done)
 
         # Learn every UPDATE_EVERY time steps.
         self.t_step = (self.t_step + 1) % self.update_every
@@ -79,7 +79,7 @@ class DDPGAgent:
 
         # ---------------------------- update critic ---------------------------- #
         # Get predicted next-state actions and Q values from target models
-        actions_next = self.actor_target(next_states)
+        actions_next = self.actor_target(next_states).float()
         Q_targets_next = self.critic_target(next_states, actions_next)
         # Compute Q targets for current states (y_i)
         Q_targets = rewards + (gamma * Q_targets_next * (1 - dones))
@@ -95,7 +95,7 @@ class DDPGAgent:
 
         # ---------------------------- update actor ---------------------------- #
         # Compute actor loss
-        actions_pred = self.actor_local(states)
+        actions_pred = self.actor_local(states).float()
         actor_loss = -self.critic_local(states, actions_pred).mean()
         # Minimize the loss
         self.actor_optimizer.zero_grad()
@@ -118,38 +118,37 @@ class DDPGAgent:
         for target_param, local_param in zip(target_model.parameters(), local_model.parameters()):
             target_param.data.copy_(tau*local_param.data + (1.0-tau)*target_param.data)
 
-    def run(self, env, epochs):
+    def run(self, env, epochs, score_threshold, filename):
         all_scores = []
         scores_window = deque(maxlen=100)
 
         for epoch in range(1, epochs+1):
 
-            states = env.reset()
-            scores = np.zeros(config.num_agents)
+            state = env.reset()
+            score = 0
 
-            for _ in range(max_t):
-                actions = agent.act(states)
-                env_info = env.step(actions)[brain_name]
-                rewards = env_info.rewards
-                next_states = env_info.vector_observations
-                dones = env_info.local_done
+            while True:
+                action = self.act(state)
+                next_state, reward, done, _ = env.step(np.argmax(action))
+                self.step(state, action, reward, next_state, done)
 
-                agent.step(states, actions, rewards, next_states, dones)
+                score += reward
+                state = next_state
 
-                scores += rewards
-                states = next_states
+                if done:
+                    break
 
-            avg_score = np.mean(scores)
+            avg_score = np.mean(score)
             scores_window.append(avg_score)
             all_scores.append(avg_score)
 
             print('\rEpisode {}\tAverage Score: {:.2f}'.format(epoch, np.mean(scores_window)), end="")
             if epoch % 100 == 0:
                 print('\rEpisode {}\tAverage Score: {:.2f}'.format(epoch, np.mean(scores_window)))
-            if np.mean(scores_window)>=30.0:
+            if np.mean(scores_window) >= score_threshold:
                 print('\nEnvironment solved in {:d} episodes!\tAverage Score: {:.2f}'.format(epoch-100, np.mean(scores_window)))
-                torch.save(agent.actor_local.state_dict(), 'checkpoint_actor.pth')
-                torch.save(agent.critic_local.state_dict(), 'checkpoint_critic.pth')
+                torch.save(self.actor_local.state_dict(), 'actor_' + filename)
+                torch.save(self.critic_local.state_dict(), 'critic_' + filename)
                 break
 
         return all_scores
