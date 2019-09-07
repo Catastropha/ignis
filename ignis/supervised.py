@@ -14,6 +14,9 @@ def fit(train_loader,
     if callbacks is None:
         callbacks = []
 
+    train_data_points = len(train_loader)
+    validation_data_points = len(validation_loader)
+
     for i in range(1, epochs+1):
 
         if verbose:
@@ -34,7 +37,7 @@ def fit(train_loader,
             train_epoch_loss = train_loss/train_points
 
             if verbose:
-                print('\rTrain ' + str(train_points) + '/' + str(train_points) + ' - loss: ' +
+                print('\rTrain ' + str(train_data_points) + '/' + str(train_points) + ' - loss: ' +
                       str(round(train_epoch_loss, 5)), end='')
 
         validation_epoch_loss = 0
@@ -56,7 +59,7 @@ def fit(train_loader,
                     validation_epoch_loss = validation_loss / validation_points
 
                     if verbose:
-                        print('\rValidate ' + str(validation_points) + '/' + str(validation_points) + ' - loss: ' +
+                        print('\rValidate ' + str(validation_data_points) + '/' + str(validation_points) + ' - loss: ' +
                               str(round(validation_epoch_loss, 5)), end='')
             model.train()
 
