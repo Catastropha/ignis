@@ -1,2 +1,2 @@
 from .supervised import fit
-from .agents import DDPGAgent
+from .agents import DDPGAgent, DQNAgent
