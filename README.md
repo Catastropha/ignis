@@ -10,8 +10,15 @@
 `ignis` is a high-level library that helps you write compact but full-featured training loops with metrics, early stops,
 and model checkpoints for deep learning library [PyTorch](https://pytorch.org/).
 
+With `ignis` you can solve problems thet require Supervised Learning and Deep Reinforcement Learning.
+
 You can extend `ignis` according to your own needs. You can implement custom functionalities by extending simple
 abstract classes.
+
+## Deep Reinforcement Learning algorithms
+
+1.  Deep Q Network (DQN)
+2.  Deep Deterministic Policy Gradients (DDPG)
 
 ## Installation
 
