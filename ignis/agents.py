@@ -1,9 +1,10 @@
 from abc import ABCMeta, abstractmethod
 import torch
 import torch.nn as nn
-from .memories import BasicMemory
 import numpy as np
 from collections import deque
+import random
+from .memories import BasicMemory
 
 
 class BaseAgent(metaclass=ABCMeta):
@@ -33,6 +34,9 @@ class BaseAgent(metaclass=ABCMeta):
     def save(self, filename):
         pass
 
+    def epoch_finished(self):
+        pass
+
     def run(self, env, epochs, score_threshold, filename):
         all_scores = []
         scores_window = deque(maxlen=100)
@@ -44,7 +48,7 @@ class BaseAgent(metaclass=ABCMeta):
 
             while True:
                 action = self.act(state)
-                next_state, reward, done, _ = env.step(np.argmax(action))
+                next_state, reward, done, _ = env.step(action)
                 self.step(state, action, reward, next_state, done)
 
                 score += reward
@@ -53,6 +57,7 @@ class BaseAgent(metaclass=ABCMeta):
                 if done:
                     break
 
+            self.epoch_finished()
             avg_score = np.mean(score)
             scores_window.append(avg_score)
             all_scores.append(avg_score)
@@ -78,17 +83,25 @@ class DQNAgent(BaseAgent):
                  update_every,
                  discount,
                  soft_update_tau,
+                 eps_start,
+                 eps_end,
+                 eps_decay,
                  ):
         self.device = device
         self.update_every = update_every
         self.discount = discount
         self.soft_update_tau = soft_update_tau
         self.t_step = 0
+        self.eps = eps_start
+        self.eps_end = eps_end
+        self.eps_decay = eps_decay
+        self.action_size = list(actor.parameters())[-1].shape[0]
 
         # Actor Network (w/ Target Network)
         self.actor_local = actor
         self.actor_target = type(actor)()
         self.actor_optimizer = actor_optimizer
+        self.actor_target.eval()
 
         # Memory
         self.memory = BasicMemory(memory_size=memory_size, batch_size=batch_size, device=device)
@@ -103,7 +116,12 @@ class DQNAgent(BaseAgent):
         with torch.no_grad():
             actions = self.actor_local(states).cpu().data.numpy()
         self.actor_local.train()
-        return actions
+
+        # Epsilon-greedy action selection
+        if random.random() > self.eps:
+            return np.argmax(actions)
+        else:
+            return random.randint(0, self.action_size - 1)
 
     def step(self, state, action, reward, next_state, done):
         # Save experience in replay memory
@@ -128,19 +146,19 @@ class DQNAgent(BaseAgent):
         states, actions, rewards, next_states, dones = experiences
 
         # Get max predicted Q values (for next states) from target model
-        Q_targets_next = self.actor_target(next_states).float()
+        Q_targets_next = self.actor_target(next_states).detach().max(1)[0].unsqueeze(1)
         # Compute Q targets for current states
         Q_targets = rewards + (gamma * Q_targets_next * (1 - dones))
 
         # Get expected Q values from local model
-        Q_expected = self.actor_local(states).float()
+        Q_expected = self.actor_local(states).gather(1, actions.long())
 
         # Compute loss
         loss = nn.MSELoss()
-        actor_loss = loss(Q_expected, Q_targets)
+        actor_local_loss = loss(Q_expected, Q_targets)
         # Minimize the loss
         self.actor_optimizer.zero_grad()
-        actor_loss.backward()
+        actor_local_loss.backward()
         self.actor_optimizer.step()
 
         # ------------------- update target network ------------------- #
@@ -148,6 +166,9 @@ class DQNAgent(BaseAgent):
 
     def save(self, filename):
         torch.save(self.actor_local.state_dict(), 'actor_' + filename)
+
+    def epoch_finished(self):
+        self.eps = max(self.eps_end, self.eps_decay * self.eps)
 
 
 class DDPGAgent(BaseAgent):
@@ -254,37 +275,3 @@ class DDPGAgent(BaseAgent):
     def save(self, filename):
         torch.save(self.actor_local.state_dict(), 'actor_' + filename)
         torch.save(self.critic_local.state_dict(), 'critic_' + filename)
-
-    def run(self, env, epochs, score_threshold, filename):
-        all_scores = []
-        scores_window = deque(maxlen=100)
-
-        for epoch in range(1, epochs+1):
-
-            state = env.reset()
-            score = 0
-
-            while True:
-                action = self.act(state)
-                next_state, reward, done, _ = env.step(np.argmax(action))
-                self.step(state, action, reward, next_state, done)
-
-                score += reward
-                state = next_state
-
-                if done:
-                    break
-
-            avg_score = np.mean(score)
-            scores_window.append(avg_score)
-            all_scores.append(avg_score)
-
-            print('\rEpisode {}\tAverage Score: {:.2f}'.format(epoch, np.mean(scores_window)), end="")
-            if epoch % 100 == 0:
-                print('\rEpisode {}\tAverage Score: {:.2f}'.format(epoch, np.mean(scores_window)))
-            if np.mean(scores_window) >= score_threshold:
-                print('\nEnvironment solved in {:d} episodes!\tAverage Score: {:.2f}'.format(epoch-100, np.mean(scores_window)))
-                self.save(filename=filename)
-                break
-
-        return all_scores

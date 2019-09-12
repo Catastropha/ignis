@@ -6,17 +6,17 @@ from torch.optim import Adam
 from ignis import DDPGAgent
 
 
-env = gym.make('CartPole-v1')
-action_space = env.action_space.n
+env = gym.make('MountainCarContinuous-v0')
+action_space = env.action_space.shape[0]
 space_size = env.observation_space.shape[0]
 
 
 class ActorModel(nn.Module):
     def __init__(self):
         super(ActorModel, self).__init__()
-        self.fc1 = nn.Linear(space_size, 4)
+        self.fc1 = nn.Linear(space_size, 8)
         self.relu = nn.ReLU()
-        self.fc2 = nn.Linear(4, action_space)
+        self.fc2 = nn.Linear(8, action_space)
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, states):
@@ -28,9 +28,9 @@ class ActorModel(nn.Module):
 class CriticModel(nn.Module):
     def __init__(self):
         super(CriticModel, self).__init__()
-        self.fc1 = nn.Linear(space_size, 4)
+        self.fc1 = nn.Linear(space_size, 8)
         self.relu = nn.ReLU()
-        self.fc2 = nn.Linear(4+action_space, 1)
+        self.fc2 = nn.Linear(8+action_space, 1)
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, state, action):
@@ -42,8 +42,8 @@ class CriticModel(nn.Module):
 
 actor = ActorModel()
 critic = CriticModel()
-actor_optimizer = Adam(actor.parameters(), lr=1e-3)
-critic_optimizer = Adam(critic.parameters(), lr=3e-3)
+actor_optimizer = Adam(actor.parameters(), lr=1e-2)
+critic_optimizer = Adam(critic.parameters(), lr=3e-2)
 
 ddpg = DDPGAgent(
     device='cpu',
@@ -52,10 +52,10 @@ ddpg = DDPGAgent(
     critic=critic,
     critic_optimizer=critic_optimizer,
     memory_size=int(5e6),
-    batch_size=2048,
+    batch_size=256,
     update_every=4,
     discount=0.999,
     soft_update_tau=1e-3,
 )
 
-ddpg.run(env=env, epochs=2000, score_threshold=190, filename='best_model')
+ddpg.run(env=env, epochs=2000, score_threshold=90, filename='best_model')
