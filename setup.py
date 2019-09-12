@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="ignis",
-    version="0.0.9",
+    version="0.0.10",
     author="Teodor Scorpan",
     author_email="teodor.scorpan@gmail.com",
     description="Intuitive library for training neural nets in PyTorch",

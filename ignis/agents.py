@@ -66,7 +66,7 @@ class BaseAgent(metaclass=ABCMeta):
             if epoch % 100 == 0:
                 print('\rEpisode {}\tAverage Score: {:.2f}'.format(epoch, np.mean(scores_window)))
             if np.mean(scores_window) >= score_threshold:
-                print('\nEnvironment solved in {:d} episodes!\tAverage Score: {:.2f}'.format(epoch-100, np.mean(scores_window)))
+                print('\nEnvironment solved in {:d} episodes!\tAverage Score: {:.2f}'.format(epoch, np.mean(scores_window)))
                 self.save(filename=filename)
                 break
 
